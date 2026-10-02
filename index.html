@@ -4,6 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <title>Арканоид</title>
+    
+    <!-- Yandex.Metrika counter -->
+    <script type="text/javascript">
+        (function(m,e,t,r,i,k,a){
+            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=113285088', 'ym');
+
+        ym(113285088, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/113285088" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <!-- /Yandex.Metrika counter -->
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
@@ -354,7 +369,7 @@
         </div>
         
         <div class="instructions" id="instructions">
-            <h3>🎯 Управление:</h3>
+            <h3> Управление:</h3>
             <span class="key">←</span><span class="key">→</span> движение |
             <span class="key">Space</span> запуск |
             <span class="key">P</span> пауза
@@ -362,6 +377,14 @@
     </div>
 
     <script>
+        // === ФУНКЦИЯ ОТПРАВКИ СОБЫТИЙ В ЯНДЕКС.МЕТРИКУ ===
+        function sendArkanoidEvent(eventName, params) {
+            if (typeof ym !== 'undefined') {
+                ym(113285088, 'reachGoal', eventName, params);
+                console.log('Метрика Арканоид: отправлено событие', eventName, params);
+            }
+        }
+
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
         
@@ -372,12 +395,9 @@
         let deviceMode = null;
         let animationId = null;
         
-        // Целевая позиция платформы (для плавного движения)
         let targetPaddleX = null;
         
-        // Коэффициент плавности (0.1 = очень плавно, 1.0 = мгновенно)
         const PADDLE_SMOOTHING = 0.18;
-        // Максимальное смещение за кадр (пикселей)
         const MAX_PADDLE_SPEED = 12;
         
         let activeBonuses = {
@@ -399,10 +419,10 @@
         
         const POWERUP_TYPES = [
             { type: 'wide', color: '#1dd1a1', label: '📏 Широкая', chance: 0.20 },
-            { type: 'multi', color: '#ff9ff3', label: '🔮 Мульти', chance: 0.18 },
+            { type: 'multi', color: '#ff9ff3', label: ' Мульти', chance: 0.18 },
             { type: 'super', color: '#ff6b6b', label: '⚡ Супер', chance: 0.12 },
             { type: 'life', color: '#feca57', label: '❤️ Жизнь', chance: 0.10 },
-            { type: 'slow', color: '#48dbfb', label: '🐌 Медленно', chance: 0.15 }
+            { type: 'slow', color: '#48dbfb', label: ' Медленно', chance: 0.15 }
         ];
         
         function selectDevice(device) {
@@ -449,7 +469,7 @@
                 width: paddleWidth,
                 baseWidth: paddleWidth,
                 height: paddleHeight,
-                speed: 5, // Уменьшено с 6 до 5
+                speed: 5,
                 dx: 0
             };
             
@@ -527,15 +547,12 @@
             mainBall.launched = true;
         }
         
-        // Плавное движение платформы к целевой позиции
         function updatePaddlePosition() {
             if (targetPaddleX === null) return;
             
-            // Целевая позиция - центр платформы должен быть в targetPaddleX
             const targetX = targetPaddleX - paddle.width / 2;
             const diff = targetX - paddle.x;
             
-            // Ограничиваем максимальное смещение за кадр
             const maxMove = MAX_PADDLE_SPEED;
             let move = diff;
             
@@ -543,12 +560,10 @@
                 move = Math.sign(move) * maxMove;
             }
             
-            // Применяем сглаживание
             const smoothedMove = move * PADDLE_SMOOTHING * 3;
             
             paddle.x += smoothedMove;
             
-            // Ограничения по краям
             if (paddle.x < 0) paddle.x = 0;
             if (paddle.x + paddle.width > canvasWidth) {
                 paddle.x = canvasWidth - paddle.width;
@@ -648,17 +663,14 @@
                 }
             }
             
-            // Плавное движение платформы
             updatePaddlePosition();
             
-            // Движение от кнопок (дополнительно к touch)
             if (paddle.dx !== 0) {
                 paddle.x += paddle.dx;
                 if (paddle.x < 0) paddle.x = 0;
                 if (paddle.x + paddle.width > canvasWidth) {
                     paddle.x = canvasWidth - paddle.width;
                 }
-                // При движении кнопками обновляем target
                 targetPaddleX = paddle.x + paddle.width / 2;
             }
             
@@ -961,18 +973,37 @@
             gameRunning = false;
             document.getElementById('final-score').textContent = score;
             document.getElementById('game-over').style.display = 'block';
+
+            // ОТПРАВЛЯЕМ СОБЫТИЕ: Игра окончена
+            sendArkanoidEvent('arkanoid_game_over', {
+                final_score: score,
+                final_level: level
+            });
         }
         
         function levelComplete() {
             gameRunning = false;
             document.getElementById('level-score').textContent = score;
             document.getElementById('level-complete').style.display = 'block';
+
+            // ОТПРАВЛЯЕМ СОБЫТИЕ: Уровень пройден
+            sendArkanoidEvent('arkanoid_level_complete', {
+                level: level,
+                score: score,
+                lives_left: lives
+            });
         }
         
         function winGame() {
             gameRunning = false;
             document.getElementById('win-score').textContent = score;
             document.getElementById('win-screen').style.display = 'block';
+
+            // ОТПРАВЛЯЕМ СОБЫТИЕ: Полная победа
+            sendArkanoidEvent('arkanoid_win', {
+                final_score: score,
+                final_level: level
+            });
         }
         
         function togglePause() {
@@ -1015,14 +1046,12 @@
             });
         }
         
-        // Touch управление - теперь плавное через targetPaddleX
         canvas.addEventListener('touchmove', (e) => {
             if (deviceMode !== 'mobile') return;
             e.preventDefault();
             const rect = canvas.getBoundingClientRect();
             const touch = e.touches[0];
             const x = touch.clientX - rect.left;
-            // Просто задаём целевую позицию - платформа плавно догонит
             targetPaddleX = x;
         }, { passive: false });
         
@@ -1033,14 +1062,12 @@
             const x = touch.clientX - rect.left;
             targetPaddleX = x;
             
-            // Запуск мяча по тапу
             if (gameRunning && !isPaused) {
                 const mainBall = balls.find(b => !b.launched);
                 if (mainBall) launchBall();
             }
         }, { passive: true });
         
-        // Мышь - тоже плавное движение
         canvas.addEventListener('mousemove', (e) => {
             if (deviceMode !== 'pc') return;
             const rect = canvas.getBoundingClientRect();
