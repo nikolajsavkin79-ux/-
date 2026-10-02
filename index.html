@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Арканоид</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            color: white;
+            overflow: hidden;
+            touch-action: manipulation;
+            height: 100vh;
+            padding: 10px;
+        }
+        
+        .device-select {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            width: 100%;
+        }
+        
+        .device-select h1 {
+            font-size: 2.2em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .device-select h2 { font-size: 1.4em; margin-bottom: 10px; color: #feca57; }
+        .device-select p { margin-bottom: 25px; color: #bdc3c7; font-size: 0.95em; text-align: center; }
+        
+        .device-buttons { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; width: 100%; max-width: 380px; }
+        
+        .device-btn {
+            flex: 1; min-width: 140px; padding: 20px 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: 2px solid rgba(255,255,255,0.2); border-radius: 12px;
+            cursor: pointer; font-weight: bold; transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .device-btn:active { transform: scale(0.95); }
+        .device-btn .icon { font-size: 2.5em; }
+        .device-btn .label { font-size: 1em; }
+        .device-btn .desc { font-size: 0.75em; opacity: 0.8; font-weight: normal; }
+        
+        #game-screen {
+            display: none;
+            width: 100%;
+            max-width: 420px;
+            height: 100vh;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+        }
+        
+        .main-area {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .canvas-wrapper {
+            position: relative;
+            flex-shrink: 0;
+            border: 2px solid #fff;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        #game-canvas { display: block; background: rgba(0,0,0,0.8); }
+        
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-shrink: 0;
+            width: 75px;
+            align-items: stretch;
+        }
+        
+        .info-box {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 5px 4px;
+            text-align: center;
+        }
+        
+        .info-box .label {
+            font-size: 0.55em;
+            color: #feca57;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-box .value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #48dbfb;
+        }
+        
+        .active-bonuses {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 5px 4px;
+            text-align: center;
+            min-height: 60px;
+        }
+        
+        .active-bonuses .label {
+            font-size: 0.5em;
+            color: #feca57;
+            margin-bottom: 3px;
+        }
+        
+        .side-btn {
+            padding: 8px 4px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 8px;
+            color: white;
+            font-size: 0.6em;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        .side-btn:active {
+            background: rgba(255,255,255,0.3);
+            transform: scale(0.95);
+        }
+        
+        .mobile-controls {
+            display: none;
+            width: 100%;
+            padding: 6px 8px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: 50px;
+            gap: 3px;
+        }
+        
+        .ctrl-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            transition: all 0.1s;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+        }
+        
+        .ctrl-btn:active, .ctrl-btn.pressed {
+            transform: scale(0.9);
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+        
+        .ctrl-btn.empty { background: transparent; border: none; box-shadow: none; cursor: default; }
+        
+        .launch-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            font-size: 0.75em;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            transition: all 0.1s;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+            text-align: center;
+            line-height: 1.1;
+        }
+        
+        .launch-btn:active, .launch-btn.pressed { transform: scale(0.88); }
+        .launch-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .controls { display: none; margin-top: 10px; gap: 10px; flex-wrap: wrap; justify-content: center; flex-shrink: 0; }
+        
+        .pc-btn {
+            padding: 10px 18px; font-size: 0.85em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 8px;
+            cursor: pointer; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .pc-btn:hover { transform: translateY(-2px); }
+        
+        .overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid #ff6b6b;
+            box-shadow: 0 0 40px rgba(255,107,107,0.5);
+            display: none;
+            z-index: 100;
+            width: 85%;
+            max-width: 280px;
+        }
+        
+        .overlay h2 { font-size: 1.6em; color: #ff6b6b; margin-bottom: 10px; }
+        .overlay p { font-size: 1em; margin-bottom: 12px; color: #feca57; }
+        .overlay button {
+            padding: 8px 16px; margin: 4px; font-size: 0.85em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 6px;
+            cursor: pointer; font-weight: bold;
+        }
+        
+        .instructions {
+            display: none; margin-top: 8px; background: rgba(0,0,0,0.4);
+            padding: 8px 12px; border-radius: 8px; font-size: 0.7em;
+            line-height: 1.5; text-align: center; flex-shrink: 0;
+        }
+        .instructions h3 { color: #feca57; margin-bottom: 4px; font-size: 1em; }
+        .key { display: inline-block; background: rgba(255,255,255,0.2); padding: 1px 5px; border-radius: 3px; margin: 0 1px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="device-select" id="device-select">
+        <h1>🎮 АРКАНОИД 🎮</h1>
+        <h2>Выберите устройство</h2>
+        <p>Выберите способ управления</p>
+        <div class="device-buttons">
+            <button class="device-btn" onclick="selectDevice('mobile')">
+                <div class="icon"></div>
+                <div class="label">Телефон</div>
+                <div class="desc">Экранные кнопки</div>
+            </button>
+            <button class="device-btn" onclick="selectDevice('pc')">
+                <div class="icon">💻</div>
+                <div class="label">Компьютер</div>
+                <div class="desc">Мышь/Клавиатура</div>
+            </button>
+        </div>
+    </div>
+    
+    <div id="game-screen">
+        <div class="main-area">
+            <div class="canvas-wrapper">
+                <canvas id="game-canvas"></canvas>
+                <div class="overlay" id="game-over">
+                    <h2>GAME OVER</h2>
+                    <p>Счёт: <span id="final-score">0</span></p>
+                    <button onclick="startGame()">Заново</button>
+                    <button onclick="backToDeviceSelect()" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">Меню</button>
+                </div>
+                <div class="overlay" id="level-complete">
+                    <h2 style="color: #48dbfb;">УРОВЕНЬ ПРОЙДЕН!</h2>
+                    <p>Счёт: <span id="level-score">0</span></p>
+                    <button onclick="nextLevel()">Следующий уровень</button>
+                </div>
+                <div class="overlay" id="win-screen">
+                    <h2 style="color: #feca57;">🏆 ПОБЕДА! 🏆</h2>
+                    <p>Финальный счёт: <span id="win-score">0</span></p>
+                    <button onclick="startGame()">Играть снова</button>
+                    <button onclick="backToDeviceSelect()" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">Меню</button>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="info-box">
+                    <div class="label">Счёт</div>
+                    <div class="value" id="score">0</div>
+                </div>
+                <div class="info-box">
+                    <div class="label">Уровень</div>
+                    <div class="value" id="level">1</div>
+                </div>
+                <div class="info-box">
+                    <div class="label">Жизни</div>
+                    <div class="value" id="lives">3</div>
+                </div>
+                <div class="info-box">
+                    <div class="label">Мячи</div>
+                    <div class="value" id="balls-count">1</div>
+                </div>
+                <div class="active-bonuses" id="active-bonuses">
+                    <div class="label">Бонусы</div>
+                    <div id="bonuses-list" style="font-size: 0.7em; color: #bdc3c7;">—</div>
+                </div>
+                <button class="side-btn" onclick="togglePause()">⏸<br>Пауза</button>
+                <button class="side-btn" onclick="backToDeviceSelect()">🔄<br>Меню</button>
+            </div>
+        </div>
+        
+        <div class="mobile-controls" id="mobile-controls">
+            <div class="controls-row">
+                <div class="dpad">
+                    <div class="ctrl-btn" data-action="left">◀</div>
+                    <div class="ctrl-btn empty"></div>
+                    <div class="ctrl-btn" data-action="right">▶</div>
+                </div>
+                <button class="launch-btn" id="launch-btn" onclick="launchBall()">ЗАПУСК</button>
+            </div>
+        </div>
+        
+        <div class="controls" id="pc-controls">
+            <button class="pc-btn" onclick="startGame()"> Новая игра</button>
+            <button class="pc-btn" onclick="togglePause()">⏸ Пауза</button>
+            <button class="pc-btn" onclick="backToDeviceSelect()">🔄 Меню</button>
+        </div>
+        
+        <div class="instructions" id="instructions">
+            <h3>🎯 Управление:</h3>
+            <span class="key">←</span><span class="key">→</span> движение |
+            <span class="key">Space</span> запуск |
+            <span class="key">P</span> пауза
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let canvasWidth, canvasHeight;
+        let paddle, balls, bricks, powerUps;
+        let score = 0, level = 1, lives = 3;
+        let gameRunning = false, isPaused = false;
+        let deviceMode = null;
+        let animationId = null;
+        
+        // Целевая позиция платформы (для плавного движения)
+        let targetPaddleX = null;
+        
+        // Коэффициент плавности (0.1 = очень плавно, 1.0 = мгновенно)
+        const PADDLE_SMOOTHING = 0.18;
+        // Максимальное смещение за кадр (пикселей)
+        const MAX_PADDLE_SPEED = 12;
+        
+        let activeBonuses = {
+            wide: 0,
+            slow: 0,
+            superBall: false
+        };
+        
+        const LEVELS = [
+            [[1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]],
+            [[2,2,2,2,2,2,2,2,2,2],[1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1],[0,1,1,1,1,1,1,1,1,0],[0,0,1,1,1,1,1,1,0,0]],
+            [[3,3,3,3,3,3,3,3,3,3],[2,2,2,2,2,2,2,2,2,2],[1,1,1,1,1,1,1,1,1,1],[1,0,1,0,1,0,1,0,1,0],[0,1,0,1,0,1,0,1,0,1]],
+            [[3,2,1,1,1,1,1,1,2,3],[2,1,1,1,1,1,1,1,1,2],[1,1,2,2,2,2,2,2,1,1],[1,1,2,3,3,3,3,2,1,1],[1,1,1,2,2,2,2,1,1,1]],
+            [[3,3,3,3,3,3,3,3,3,3],[3,2,2,2,2,2,2,2,2,3],[3,2,1,1,1,1,1,1,2,3],[3,2,1,0,0,0,0,1,2,3],[3,3,3,3,3,3,3,3,3,3]]
+        ];
+        
+        const COLORS = { 1: '#48dbfb', 2: '#feca57', 3: '#ff6b6b' };
+        const POINTS = { 1: 10, 2: 20, 3: 50 };
+        
+        const POWERUP_TYPES = [
+            { type: 'wide', color: '#1dd1a1', label: '📏 Широкая', chance: 0.20 },
+            { type: 'multi', color: '#ff9ff3', label: '🔮 Мульти', chance: 0.18 },
+            { type: 'super', color: '#ff6b6b', label: '⚡ Супер', chance: 0.12 },
+            { type: 'life', color: '#feca57', label: '❤️ Жизнь', chance: 0.10 },
+            { type: 'slow', color: '#48dbfb', label: '🐌 Медленно', chance: 0.15 }
+        ];
+        
+        function selectDevice(device) {
+            deviceMode = device;
+            document.getElementById('device-select').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+            
+            if (device === 'mobile') {
+                document.getElementById('mobile-controls').style.display = 'block';
+                document.getElementById('pc-controls').style.display = 'none';
+                document.getElementById('instructions').style.display = 'none';
+                setupMobileControls();
+            } else {
+                document.getElementById('mobile-controls').style.display = 'none';
+                document.getElementById('pc-controls').style.display = 'flex';
+                document.getElementById('instructions').style.display = 'block';
+            }
+            
+            resizeCanvas();
+            startGame();
+        }
+        
+        function resizeCanvas() {
+            const screenWidth = window.innerWidth - 20;
+            const screenHeight = window.innerHeight;
+            const rightPanel = 91;
+            const availableWidth = screenWidth - rightPanel;
+            const reservedHeight = 175;
+            const availableHeight = screenHeight - reservedHeight;
+            
+            canvasWidth = Math.min(availableWidth, 320);
+            canvasHeight = Math.min(availableHeight, 450);
+            
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+        }
+        
+        function initGame() {
+            const paddleWidth = canvasWidth * 0.2;
+            const paddleHeight = 12;
+            paddle = {
+                x: (canvasWidth - paddleWidth) / 2,
+                y: canvasHeight - 30,
+                width: paddleWidth,
+                baseWidth: paddleWidth,
+                height: paddleHeight,
+                speed: 5, // Уменьшено с 6 до 5
+                dx: 0
+            };
+            
+            targetPaddleX = paddle.x;
+            
+            balls = [];
+            createBall(true);
+            
+            powerUps = [];
+            activeBonuses = { wide: 0, slow: 0, superBall: false };
+            
+            initBricks();
+        }
+        
+        function createBall(isMain = false) {
+            const ballRadius = 7;
+            const ball = {
+                x: isMain ? canvasWidth / 2 : paddle.x + paddle.width / 2,
+                y: isMain ? paddle.y - ballRadius - 2 : paddle.y - ballRadius - 2,
+                radius: ballRadius,
+                speed: (4 + level * 0.5),
+                dx: 0,
+                dy: 0,
+                launched: isMain ? false : true,
+                isSuper: activeBonuses.superBall
+            };
+            
+            if (ball.launched) {
+                const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.0;
+                ball.dx = Math.cos(angle) * ball.speed;
+                ball.dy = Math.sin(angle) * ball.speed;
+            }
+            
+            balls.push(ball);
+            return ball;
+        }
+        
+        function initBricks() {
+            bricks = [];
+            const levelData = LEVELS[(level - 1) % LEVELS.length];
+            const rows = levelData.length;
+            const cols = levelData[0].length;
+            const brickWidth = (canvasWidth - 20) / cols;
+            const brickHeight = 20;
+            const offsetX = 10;
+            const offsetY = 10;
+            
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const strength = levelData[r][c];
+                    if (strength > 0) {
+                        bricks.push({
+                            x: offsetX + c * brickWidth,
+                            y: offsetY + r * brickHeight,
+                            width: brickWidth - 2,
+                            height: brickHeight - 2,
+                            strength: strength,
+                            maxStrength: strength,
+                            color: COLORS[strength]
+                        });
+                    }
+                }
+            }
+        }
+        
+        function launchBall() {
+            if (!gameRunning || isPaused) return;
+            
+            const mainBall = balls.find(b => !b.launched);
+            if (!mainBall) return;
+            
+            const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.5;
+            mainBall.dx = Math.cos(angle) * mainBall.speed;
+            mainBall.dy = Math.sin(angle) * mainBall.speed;
+            mainBall.launched = true;
+        }
+        
+        // Плавное движение платформы к целевой позиции
+        function updatePaddlePosition() {
+            if (targetPaddleX === null) return;
+            
+            // Целевая позиция - центр платформы должен быть в targetPaddleX
+            const targetX = targetPaddleX - paddle.width / 2;
+            const diff = targetX - paddle.x;
+            
+            // Ограничиваем максимальное смещение за кадр
+            const maxMove = MAX_PADDLE_SPEED;
+            let move = diff;
+            
+            if (Math.abs(move) > maxMove) {
+                move = Math.sign(move) * maxMove;
+            }
+            
+            // Применяем сглаживание
+            const smoothedMove = move * PADDLE_SMOOTHING * 3;
+            
+            paddle.x += smoothedMove;
+            
+            // Ограничения по краям
+            if (paddle.x < 0) paddle.x = 0;
+            if (paddle.x + paddle.width > canvasWidth) {
+                paddle.x = canvasWidth - paddle.width;
+            }
+        }
+        
+        function spawnPowerUp(x, y) {
+            const rand = Math.random();
+            let cumulative = 0;
+            let selectedType = null;
+            
+            for (const pt of POWERUP_TYPES) {
+                cumulative += pt.chance;
+                if (rand <= cumulative) {
+                    selectedType = pt;
+                    break;
+                }
+            }
+            
+            if (!selectedType) return;
+            
+            powerUps.push({
+                x: x,
+                y: y,
+                width: 20,
+                height: 20,
+                type: selectedType.type,
+                color: selectedType.color,
+                label: selectedType.label,
+                dy: 2
+            });
+        }
+        
+        function activatePowerUp(powerUp) {
+            switch(powerUp.type) {
+                case 'wide':
+                    activeBonuses.wide = 10000;
+                    paddle.width = paddle.baseWidth * 1.8;
+                    break;
+                    
+                case 'multi':
+                    for (let i = 0; i < 2; i++) {
+                        const newBall = createBall(false);
+                        newBall.isSuper = activeBonuses.superBall;
+                        const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.5;
+                        newBall.dx = Math.cos(angle) * newBall.speed;
+                        newBall.dy = Math.sin(angle) * newBall.speed;
+                    }
+                    break;
+                    
+                case 'super':
+                    activeBonuses.superBall = true;
+                    balls.forEach(b => b.isSuper = true);
+                    break;
+                    
+                case 'life':
+                    lives++;
+                    updateUI();
+                    break;
+                    
+                case 'slow':
+                    activeBonuses.slow = 8000;
+                    balls.forEach(b => {
+                        b.dx *= 0.6;
+                        b.dy *= 0.6;
+                    });
+                    break;
+            }
+            updateBonusesUI();
+        }
+        
+        function update(dt) {
+            if (!gameRunning || isPaused) return;
+            
+            if (activeBonuses.wide > 0) {
+                activeBonuses.wide -= dt;
+                if (activeBonuses.wide <= 0) {
+                    activeBonuses.wide = 0;
+                    paddle.width = paddle.baseWidth;
+                    updateBonusesUI();
+                }
+            }
+            
+            if (activeBonuses.slow > 0) {
+                activeBonuses.slow -= dt;
+                if (activeBonuses.slow <= 0) {
+                    activeBonuses.slow = 0;
+                    balls.forEach(b => {
+                        const currentSpeed = Math.sqrt(b.dx * b.dx + b.dy * b.dy);
+                        if (currentSpeed > 0) {
+                            const targetSpeed = b.isSuper ? b.speed * 1.3 : b.speed;
+                            b.dx = (b.dx / currentSpeed) * targetSpeed;
+                            b.dy = (b.dy / currentSpeed) * targetSpeed;
+                        }
+                    });
+                    updateBonusesUI();
+                }
+            }
+            
+            // Плавное движение платформы
+            updatePaddlePosition();
+            
+            // Движение от кнопок (дополнительно к touch)
+            if (paddle.dx !== 0) {
+                paddle.x += paddle.dx;
+                if (paddle.x < 0) paddle.x = 0;
+                if (paddle.x + paddle.width > canvasWidth) {
+                    paddle.x = canvasWidth - paddle.width;
+                }
+                // При движении кнопками обновляем target
+                targetPaddleX = paddle.x + paddle.width / 2;
+            }
+            
+            for (let i = balls.length - 1; i >= 0; i--) {
+                const ball = balls[i];
+                
+                if (!ball.launched) {
+                    ball.x = paddle.x + paddle.width / 2;
+                    ball.y = paddle.y - ball.radius - 2;
+                    continue;
+                }
+                
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+                
+                if (ball.x - ball.radius < 0) {
+                    ball.x = ball.radius;
+                    ball.dx = -ball.dx;
+                }
+                if (ball.x + ball.radius > canvasWidth) {
+                    ball.x = canvasWidth - ball.radius;
+                    ball.dx = -ball.dx;
+                }
+                if (ball.y - ball.radius < 0) {
+                    ball.y = ball.radius;
+                    ball.dy = -ball.dy;
+                }
+                
+                if (ball.y - ball.radius > canvasHeight) {
+                    balls.splice(i, 1);
+                    continue;
+                }
+                
+                if (ball.dy > 0 &&
+                    ball.y + ball.radius >= paddle.y &&
+                    ball.y + ball.radius <= paddle.y + paddle.height + 5 &&
+                    ball.x >= paddle.x &&
+                    ball.x <= paddle.x + paddle.width) {
+                    
+                    const hitPos = (ball.x - paddle.x) / paddle.width;
+                    const angle = (hitPos - 0.5) * Math.PI * 0.7;
+                    const currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+                    ball.dx = Math.sin(angle) * currentSpeed;
+                    ball.dy = -Math.cos(angle) * currentSpeed;
+                    ball.y = paddle.y - ball.radius;
+                }
+                
+                for (let j = bricks.length - 1; j >= 0; j--) {
+                    const brick = bricks[j];
+                    
+                    if (ball.x + ball.radius > brick.x &&
+                        ball.x - ball.radius < brick.x + brick.width &&
+                        ball.y + ball.radius > brick.y &&
+                        ball.y - ball.radius < brick.y + brick.height) {
+                        
+                        if (!ball.isSuper) {
+                            const overlapLeft = ball.x + ball.radius - brick.x;
+                            const overlapRight = brick.x + brick.width - (ball.x - ball.radius);
+                            const overlapTop = ball.y + ball.radius - brick.y;
+                            const overlapBottom = brick.y + brick.height - (ball.y - ball.radius);
+                            
+                            const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+                            
+                            if (minOverlap === overlapLeft || minOverlap === overlapRight) {
+                                ball.dx = -ball.dx;
+                            } else {
+                                ball.dy = -ball.dy;
+                            }
+                        }
+                        
+                        brick.strength--;
+                        score += POINTS[brick.maxStrength];
+                        updateUI();
+                        
+                        if (brick.strength <= 0) {
+                            if (Math.random() < 0.22) {
+                                spawnPowerUp(brick.x + brick.width / 2, brick.y + brick.height / 2);
+                            }
+                            bricks.splice(j, 1);
+                        } else {
+                            brick.color = COLORS[brick.strength];
+                        }
+                        
+                        if (!ball.isSuper) break;
+                    }
+                }
+            }
+            
+            for (let i = powerUps.length - 1; i >= 0; i--) {
+                const pu = powerUps[i];
+                pu.y += pu.dy;
+                
+                if (pu.y + pu.height >= paddle.y &&
+                    pu.y <= paddle.y + paddle.height &&
+                    pu.x + pu.width >= paddle.x &&
+                    pu.x <= paddle.x + paddle.width) {
+                    
+                    activatePowerUp(pu);
+                    powerUps.splice(i, 1);
+                    continue;
+                }
+                
+                if (pu.y > canvasHeight) {
+                    powerUps.splice(i, 1);
+                }
+            }
+            
+            if (balls.length === 0) {
+                lives--;
+                updateUI();
+                
+                if (lives <= 0) {
+                    gameOver();
+                } else {
+                    activeBonuses = { wide: 0, slow: 0, superBall: false };
+                    paddle.width = paddle.baseWidth;
+                    createBall(true);
+                    updateBonusesUI();
+                }
+            }
+            
+            if (bricks.length === 0 && balls.length > 0) {
+                if (level >= LEVELS.length) {
+                    winGame();
+                } else {
+                    levelComplete();
+                }
+            }
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            
+            bricks.forEach(brick => {
+                const gradient = ctx.createLinearGradient(brick.x, brick.y, brick.x, brick.y + brick.height);
+                gradient.addColorStop(0, brick.color);
+                gradient.addColorStop(1, shadeColor(brick.color, -30));
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+                
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.fillRect(brick.x, brick.y, brick.width, 3);
+                
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(brick.x, brick.y, brick.width, brick.height);
+            });
+            
+            powerUps.forEach(pu => {
+                ctx.shadowColor = pu.color;
+                ctx.shadowBlur = 10;
+                
+                ctx.fillStyle = pu.color;
+                ctx.fillRect(pu.x - pu.width/2, pu.y, pu.width, pu.height);
+                
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(pu.x - pu.width/2, pu.y, pu.width, pu.height);
+                
+                ctx.shadowBlur = 0;
+                
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const icons = { wide: '', multi: '🔮', super: '⚡', life: '❤', slow: '🐌' };
+                ctx.fillText(icons[pu.type] || '?', pu.x, pu.y + pu.height/2);
+            });
+            
+            const paddleColor = activeBonuses.wide > 0 ? '#1dd1a1' : '#667eea';
+            const paddleGradient = ctx.createLinearGradient(paddle.x, paddle.y, paddle.x, paddle.y + paddle.height);
+            paddleGradient.addColorStop(0, paddleColor);
+            paddleGradient.addColorStop(1, shadeColor(paddleColor, -30));
+            
+            ctx.fillStyle = paddleGradient;
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, 3);
+            
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(paddle.x, paddle.y, paddle.width, paddle.height);
+            
+            balls.forEach(ball => {
+                const ballColor = ball.isSuper ? '#ff6b6b' : '#feca57';
+                const ballGradient = ctx.createRadialGradient(
+                    ball.x - 2, ball.y - 2, 0,
+                    ball.x, ball.y, ball.radius
+                );
+                ballGradient.addColorStop(0, '#ffffff');
+                ballGradient.addColorStop(0.7, ballColor);
+                ballGradient.addColorStop(1, shadeColor(ballColor, -30));
+                
+                if (ball.isSuper) {
+                    ctx.shadowColor = '#ff6b6b';
+                    ctx.shadowBlur = 15;
+                }
+                
+                ctx.fillStyle = ballGradient;
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                ctx.shadowBlur = 0;
+                
+                if (ball.isSuper) {
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 10px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('⚡', ball.x, ball.y);
+                }
+            });
+        }
+        
+        function shadeColor(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.max(0, Math.min(255, (num >> 16) + amt));
+            const G = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amt));
+            const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt));
+            return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
+        }
+        
+        let lastTime = 0;
+        function gameLoop(timestamp) {
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
+            
+            update(dt);
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('level').textContent = level;
+            document.getElementById('lives').textContent = lives;
+            document.getElementById('balls-count').textContent = balls.length;
+        }
+        
+        function updateBonusesUI() {
+            const list = document.getElementById('bonuses-list');
+            const bonuses = [];
+            
+            if (activeBonuses.wide > 0) {
+                bonuses.push(`📏 ${Math.ceil(activeBonuses.wide/1000)}с`);
+            }
+            if (activeBonuses.slow > 0) {
+                bonuses.push(`🐌 ${Math.ceil(activeBonuses.slow/1000)}с`);
+            }
+            if (activeBonuses.superBall) {
+                bonuses.push('⚡Супер');
+            }
+            
+            list.textContent = bonuses.length > 0 ? bonuses.join(' ') : '—';
+        }
+        
+        function startGame() {
+            score = 0;
+            level = 1;
+            lives = 3;
+            gameRunning = true;
+            isPaused = false;
+            
+            document.getElementById('game-over').style.display = 'none';
+            document.getElementById('level-complete').style.display = 'none';
+            document.getElementById('win-screen').style.display = 'none';
+            
+            resizeCanvas();
+            initGame();
+            updateUI();
+            updateBonusesUI();
+            
+            if (animationId) cancelAnimationFrame(animationId);
+            lastTime = performance.now();
+            gameLoop(lastTime);
+        }
+        
+        function nextLevel() {
+            level++;
+            gameRunning = true;
+            isPaused = false;
+            
+            document.getElementById('level-complete').style.display = 'none';
+            
+            resizeCanvas();
+            initGame();
+            updateUI();
+            updateBonusesUI();
+        }
+        
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('game-over').style.display = 'block';
+        }
+        
+        function levelComplete() {
+            gameRunning = false;
+            document.getElementById('level-score').textContent = score;
+            document.getElementById('level-complete').style.display = 'block';
+        }
+        
+        function winGame() {
+            gameRunning = false;
+            document.getElementById('win-score').textContent = score;
+            document.getElementById('win-screen').style.display = 'block';
+        }
+        
+        function togglePause() {
+            if (!gameRunning) return;
+            isPaused = !isPaused;
+        }
+        
+        function backToDeviceSelect() {
+            gameRunning = false;
+            if (animationId) cancelAnimationFrame(animationId);
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('device-select').style.display = 'flex';
+            deviceMode = null;
+        }
+        
+        function setupMobileControls() {
+            const buttons = document.querySelectorAll('[data-action]');
+            buttons.forEach(btn => {
+                const action = btn.dataset.action;
+                
+                const handleStart = (e) => {
+                    e.preventDefault();
+                    btn.classList.add('pressed');
+                    if (action === 'left') paddle.dx = -paddle.speed;
+                    if (action === 'right') paddle.dx = paddle.speed;
+                };
+                
+                const handleEnd = (e) => {
+                    e.preventDefault();
+                    btn.classList.remove('pressed');
+                    paddle.dx = 0;
+                };
+                
+                btn.addEventListener('touchstart', handleStart, { passive: false });
+                btn.addEventListener('touchend', handleEnd, { passive: false });
+                btn.addEventListener('touchcancel', handleEnd, { passive: false });
+                btn.addEventListener('mousedown', handleStart);
+                btn.addEventListener('mouseup', handleEnd);
+                btn.addEventListener('mouseleave', handleEnd);
+            });
+        }
+        
+        // Touch управление - теперь плавное через targetPaddleX
+        canvas.addEventListener('touchmove', (e) => {
+            if (deviceMode !== 'mobile') return;
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left;
+            // Просто задаём целевую позицию - платформа плавно догонит
+            targetPaddleX = x;
+        }, { passive: false });
+        
+        canvas.addEventListener('touchstart', (e) => {
+            if (deviceMode !== 'mobile') return;
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left;
+            targetPaddleX = x;
+            
+            // Запуск мяча по тапу
+            if (gameRunning && !isPaused) {
+                const mainBall = balls.find(b => !b.launched);
+                if (mainBall) launchBall();
+            }
+        }, { passive: true });
+        
+        // Мышь - тоже плавное движение
+        canvas.addEventListener('mousemove', (e) => {
+            if (deviceMode !== 'pc') return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            targetPaddleX = x;
+        });
+        
+        canvas.addEventListener('click', () => {
+            if (gameRunning && !isPaused) {
+                const mainBall = balls.find(b => !b.launched);
+                if (mainBall) launchBall();
+            }
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (deviceMode !== 'pc') return;
+            
+            if (e.key === 'p' || e.key === 'P' || e.key === 'з' || e.key === 'З') {
+                togglePause();
+                return;
+            }
+            
+            if (e.key === ' ') {
+                e.preventDefault();
+                if (gameRunning && !isPaused) {
+                    const mainBall = balls.find(b => !b.launched);
+                    if (mainBall) launchBall();
+                }
+            }
+            
+            if (e.key === 'ArrowLeft') paddle.dx = -paddle.speed;
+            if (e.key === 'ArrowRight') paddle.dx = paddle.speed;
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' && paddle.dx < 0) paddle.dx = 0;
+            if (e.key === 'ArrowRight' && paddle.dx > 0) paddle.dx = 0;
+        });
+        
+        window.addEventListener('resize', () => {
+            if (deviceMode) {
+                resizeCanvas();
+                if (paddle) {
+                    paddle.y = canvasHeight - 30;
+                    paddle.baseWidth = canvasWidth * 0.2;
+                    if (activeBonuses.wide <= 0) {
+                        paddle.width = paddle.baseWidth;
+                    } else {
+                        paddle.width = paddle.baseWidth * 1.8;
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
